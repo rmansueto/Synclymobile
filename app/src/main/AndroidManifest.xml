@@ -19,6 +19,12 @@
             android:name=".screens.home.HomeActivity"
             android:exported="false" />
         <activity
+            android:name=".screens.profile.ProfileActivity"
+            />
+        <activity
+            android:name=".screens.availability.AvailabilityActivity"
+            />
+        <activity
             android:name=".screens.login.LoginActivity"
             android:exported="true">
             <intent-filter>

@@ -5,7 +5,13 @@
     android:orientation="vertical"
     android:padding="24dp"
     android:gravity="center">
-
+    <ImageView android:id="@+id/ivAvatar"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:layout_gravity="center"
+        android:layout_marginBottom="8dp"
+        android:scaleType="centerCrop"
+        android:src="@mipmap/ic_launcher"/>
     <TextView android:id="@+id/tvWelcome"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -25,10 +31,22 @@
         android:layout_marginTop="16dp"
         android:visibility="gone"/>
 
-    <Button android:id="@+id/btnLogout"
+    <Button android:id="@+id/btnProfile"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
+        android:text="My Profile"/>
+
+    <Button android:id="@+id/btnAvailability"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="My Availability"/>
+
+    <Button android:id="@+id/btnLogout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
         android:text="Logout"/>
 
 </LinearLayout>

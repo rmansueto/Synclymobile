@@ -5,10 +5,13 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.bumptech.glide.Glide
 import com.example.syncly.data.SessionManager
 import com.example.syncly.data.User
 import com.example.syncly.databinding.ActivityHomeBinding
+import com.example.syncly.screens.availability.AvailabilityActivity
 import com.example.syncly.screens.login.LoginActivity
+import com.example.syncly.screens.profile.ProfileActivity
 
 class HomeActivity : AppCompatActivity(), HomeContract.View {
 
@@ -26,8 +29,14 @@ class HomeActivity : AppCompatActivity(), HomeContract.View {
             session = SessionManager(this)
         )
 
-        binding.btnLogout.setOnClickListener {
-            presenter.logout()
+        binding.btnLogout.setOnClickListener { presenter.logout() }
+
+        binding.btnProfile.setOnClickListener {
+            startActivity(Intent(this, ProfileActivity::class.java))
+        }
+
+        binding.btnAvailability.setOnClickListener {
+            startActivity(Intent(this, AvailabilityActivity::class.java))
         }
 
         presenter.loadUserData()
@@ -42,10 +51,15 @@ class HomeActivity : AppCompatActivity(), HomeContract.View {
     }
 
     override fun displayUserInfo(user: User) {
-        binding.tvWelcome.text  = "Welcome, ${user.fullName ?: "User"}!"
-        binding.tvEmail.text    = user.email ?: ""
-        // photoUrl ready to use — load with Glide/Picasso when you add it:
-        // Glide.with(this).load(user.photoUrl).into(binding.ivAvatar)
+        binding.tvWelcome.text = "Welcome, ${user.fullName ?: "User"}!"
+        binding.tvEmail.text   = user.email ?: ""
+
+        if (!user.photoUrl.isNullOrBlank()) {
+            Glide.with(this)
+                .load(user.photoUrl)
+                .circleCrop()
+                .into(binding.ivAvatar)  // add this ImageView to activity_home.xml
+        }
     }
 
     override fun onLoadError(message: String) {

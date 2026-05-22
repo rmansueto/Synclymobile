@@ -42,6 +42,7 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core.ktx)
     implementation(libs.material)
+    implementation("com.github.bumptech.glide:glide:4.16.0")
     // Networking
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
