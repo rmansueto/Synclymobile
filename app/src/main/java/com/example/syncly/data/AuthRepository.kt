@@ -7,7 +7,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 
 class AuthRepository {
 
-    private val client = SupabaseClient
+    private val client = ApiClient
     private val gson   = Gson()
     private val JSON   = "application/json; charset=utf-8".toMediaType()
 
@@ -21,6 +21,10 @@ class AuthRepository {
     )
 
     // ── Login ─────────────────────────────────────────────────────────────────
+    // POST /api/auth/login
+    // Body: { "email": "...", "password": "..." }
+    // Returns: { "token": "...", "email": "..." }
+    // Then fetches full profile from GET /api/users/me
 
     fun login(email: String, password: String): AuthResult {
         return try {
@@ -30,47 +34,7 @@ class AuthRepository {
             }
 
             val request = client.newRequestBuilder()
-                .url("${client.getBaseUrl()}/auth/v1/token?grant_type=password")
-                .post(body.toString().toRequestBody(JSON))
-                .build()
-
-            client.getClient().newCall(request).execute().use { response ->
-                val raw = response.body?.string() ?: ""
-                if (response.isSuccessful) {
-                    val json        = gson.fromJson(raw, JsonObject::class.java)
-                    val token       = json.get("access_token").asString
-                    val user        = parseUserFromAuth(json.getAsJsonObject("user"))
-                    AuthResult(success = true, accessToken = token, user = user)
-                } else {
-                    val err = gson.fromJson(raw, JsonObject::class.java)
-                    val msg = err.get("error_description")?.asString ?: "Login failed."
-                    AuthResult(success = false, errorMessage = msg)
-                }
-            }
-        } catch (e: Exception) {
-            AuthResult(success = false, errorMessage = "Network error: ${e.message}")
-        }
-    }
-
-    // ── Register ──────────────────────────────────────────────────────────────
-
-    fun register(email: String, password: String, fullName: String): AuthResult {
-        return try {
-            // full_name and photo_url go into user_metadata on signup.
-            // Supabase stores these in auth.users and can be synced to
-            // your public `users` table via a database trigger/function.
-            val meta = JsonObject().apply {
-                addProperty("full_name", fullName)
-                addProperty("photo_url", "")
-            }
-            val body = JsonObject().apply {
-                addProperty("email", email)
-                addProperty("password", password)
-                add("data", meta)
-            }
-
-            val request = client.newRequestBuilder()
-                .url("${client.getBaseUrl()}/auth/v1/signup")
+                .url("${client.getBaseUrl()}/api/auth/login")
                 .post(body.toString().toRequestBody(JSON))
                 .build()
 
@@ -78,14 +42,16 @@ class AuthRepository {
                 val raw = response.body?.string() ?: ""
                 if (response.isSuccessful) {
                     val json  = gson.fromJson(raw, JsonObject::class.java)
-                    val token = json.get("access_token")?.asString
-                    val user  = parseUserFromAuth(
-                        json.getAsJsonObject("user") ?: json
-                    )
+                    val token = json.get("token").asString
+
+                    // Fetch full user profile using the token
+                    val user = getMe(token)
                     AuthResult(success = true, accessToken = token, user = user)
                 } else {
                     val err = gson.fromJson(raw, JsonObject::class.java)
-                    val msg = err.get("msg")?.asString ?: "Registration failed."
+                    val msg = err.get("message")?.asString
+                        ?: err.get("error")?.asString
+                        ?: "Login failed. Check your email and password."
                     AuthResult(success = false, errorMessage = msg)
                 }
             }
@@ -94,22 +60,54 @@ class AuthRepository {
         }
     }
 
-    // ── Fetch user row from your public `users` table ─────────────────────────
-    // Requires a `users` table in Supabase with columns:
-    // id (uuid), email, full_name, photo_url, created_at
 
-    fun getUserById(userId: String, accessToken: String): User? {
+    fun register(email: String, password: String, fullName: String): AuthResult {
+        return try {
+            val body = JsonObject().apply {
+                addProperty("email", email)
+                addProperty("password", password)
+                addProperty("fullName", fullName)
+            }
+
+            val request = client.newRequestBuilder()
+                .url("${client.getBaseUrl()}/api/auth/register")
+                .post(body.toString().toRequestBody(JSON))
+                .build()
+
+            client.getClient().newCall(request).execute().use { response ->
+                val raw = response.body?.string() ?: ""
+                if (response.isSuccessful) {
+                    val json  = gson.fromJson(raw, JsonObject::class.java)
+                    val token = json.get("token")?.asString
+
+                    // Fetch full profile after register
+                    val user = if (token != null) getMe(token) else null
+                    AuthResult(success = true, accessToken = token, user = user)
+                } else {
+                    val err = gson.fromJson(raw, JsonObject::class.java)
+                    val msg = err.get("message")?.asString
+                        ?: err.get("error")?.asString
+                        ?: "Registration failed."
+                    AuthResult(success = false, errorMessage = msg)
+                }
+            }
+        } catch (e: Exception) {
+            AuthResult(success = false, errorMessage = "Network error: ${e.message}")
+        }
+    }
+
+
+    fun getMe(accessToken: String): User? {
         return try {
             val request = client.newAuthenticatedRequestBuilder(accessToken)
-                .url("${client.getBaseUrl()}/rest/v1/users?id=eq.$userId&select=*")
-                .addHeader("Accept", "application/json")
+                .url("${client.getBaseUrl()}/api/users/me")
                 .get()
                 .build()
 
             client.getClient().newCall(request).execute().use { response ->
                 val raw = response.body?.string() ?: ""
                 if (response.isSuccessful) {
-                    gson.fromJson(raw, Array<User>::class.java).firstOrNull()
+                    gson.fromJson(raw, User::class.java)
                 } else null
             }
         } catch (e: Exception) {
@@ -117,19 +115,5 @@ class AuthRepository {
         }
     }
 
-    // ── Parse Supabase Auth user response → User ──────────────────────────────
-    // Supabase Auth response structure:
-    // { id, email, created_at, user_metadata: { full_name, photo_url } }
-
-    private fun parseUserFromAuth(json: JsonObject?): User? {
-        if (json == null) return null
-        val meta = json.getAsJsonObject("user_metadata")
-        return User(
-            id        = json.get("id")?.asString,
-            email     = json.get("email")?.asString,
-            fullName  = meta?.get("full_name")?.asString,
-            photoUrl  = meta?.get("photo_url")?.asString,
-            createdAt = json.get("created_at")?.asString
-        )
-    }
+    fun getUserByEmail(email: String, accessToken: String): User? = getMe(accessToken)
 }

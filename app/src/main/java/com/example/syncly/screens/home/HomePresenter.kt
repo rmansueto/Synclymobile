@@ -13,25 +13,23 @@ class HomePresenter(
     private val mainHandler = Handler(Looper.getMainLooper())
 
     override fun loadUserData() {
-        val token  = session.getAccessToken()
-        val userId = session.getUserId()
+        val token = session.getAccessToken()
 
-        if (token == null || userId == null) {
+        if (token == null) {
             view?.navigateToLogin()
             return
         }
 
-        // Show cached session data immediately — no waiting for network
+        // Show cached data immediately
         view?.displayUserInfo(session.getCachedUser())
 
-        // Then silently refresh from Supabase in background
+        // Refresh from Spring Boot backend in background
         view?.showLoading()
         Thread {
-            val freshUser = model.fetchUser(userId, token)
+            val freshUser = model.fetchUser(token)  // no userId needed anymore
             mainHandler.post {
                 view?.hideLoading()
                 if (freshUser != null) {
-                    // Update session cache with fresh data
                     session.saveSession(token, freshUser)
                     view?.displayUserInfo(freshUser)
                 } else {

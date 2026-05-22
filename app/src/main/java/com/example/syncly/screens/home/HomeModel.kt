@@ -7,6 +7,7 @@ class HomeModel {
 
     private val repository = AuthRepository()
 
-    fun fetchUser(userId: String, accessToken: String): User? =
-        repository.getUserById(userId, accessToken)
+
+    fun fetchUser(accessToken: String): User? =
+        repository.getMe(accessToken)
 }
