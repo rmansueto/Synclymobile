@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
-    <color name="syncly_primary">#6200EE</color>
-    <color name="syncly_primary_dark">#3700B3</color>
-    <color name="syncly_accent">#03DAC5</color>
-    <color name="syncly_text_secondary">#888888</color>
+    <color name="black">#111827</color>
+    <color name="white">#FFFFFF</color>
+    <color name="syncly_primary">#2563EB</color>
+    <color name="syncly_primary_light">#EFF6FF</color>
+    <color name="syncly_primary_dark">#1D4ED8</color>
+    <color name="syncly_accent">#10B981</color>
+    <color name="syncly_bg_gray">#F9FAFB</color>
+    <color name="syncly_border">#E5E7EB</color>
+    <color name="syncly_text_primary">#1F2937</color>
+    <color name="syncly_text_secondary">#4B5563</color>
+    <color name="syncly_error">#EF4444</color>
 </resources>

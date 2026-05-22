@@ -89,7 +89,7 @@ class ProfileActivity : AppCompatActivity(), ProfileContract.View {
 
     override fun displayUser(user: User) {
         binding.etFullName.setText(user.fullName ?: "")
-        binding.tvEmail.text = user.email ?: ""
+        binding.tvEmail.setText(user.email ?: "")
 
         // Load profile photo from Supabase storage URL via Glide
         if (!user.photoUrl.isNullOrBlank()) {
